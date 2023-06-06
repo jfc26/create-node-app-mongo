@@ -1,11 +1,14 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { z } from 'zod';
+import z from 'zod';
 import _ from 'lodash';
 import * as dotenv from 'dotenv';
-import locallog from '../locallog';
+import * as log from 'loglevel';
 import zodissues from '../zodissues';
 
+/**
+ * create .env file sample
+ */
 function createEnvTemplate(zodSchema: z.ZodTypeAny) {
     const shape = (zodSchema as any).shape;
     const lines: string[] = [];
@@ -28,7 +31,7 @@ function createEnvTemplate(zodSchema: z.ZodTypeAny) {
         }
 
         const markOptional = (optional ? '#* optional' : '#! required').padEnd(13, ' ');
-        lines.push(`# ${evnItem.padEnd(70, ' ')} ${markOptional} | ${description}`);
+        lines.push(`# ${evnItem.padEnd(40, ' ')} ${markOptional} | ${description}`);
     }
 
     return lines;
@@ -112,7 +115,7 @@ export async function parseEnv(options: ParseEnvOption) {
         (global as any).__env = envChecked;
     } catch (e) {
         if (e instanceof z.ZodError) {
-            locallog.object(zodissues.toIssuesTypeOne(e.issues));
+            console.dir(zodissues.toIssuesTypeOne(e.issues), { depth: Infinity });
             throw new Error('Invalid environment variables');
         } else {
             throw e;

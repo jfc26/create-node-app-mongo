@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import locallog from '../utils/locallog';
+import * as log from 'loglevel';
 
 function createConnectionString() {
     const connectionUrl = new URL('mongodb://');
@@ -9,10 +9,14 @@ function createConnectionString() {
     if (__env.DB_USERNAME) connectionUrl.username = __env.DB_USERNAME;
     if (__env.DB_PASSWORD) connectionUrl.password = __env.DB_PASSWORD;
 
-    return connectionUrl.toJSON();
+    const connectionString = connectionUrl.toJSON();
+
+    log.trace('database connection string: ', connectionString);
+
+    return connectionString;
 }
 
-async function connectToDatabase() {
+export async function connectToDatabase() {
     await mongoose.connect(createConnectionString(), {
         dbName: __env.DB_DATABASE_NAME,
         directConnection: true,
@@ -23,7 +27,5 @@ async function connectToDatabase() {
         throw new Error('Connect to database failed');
     }
 
-    locallog.log('Connect to database success');
+    log.info('Connect to database success');
 }
-
-export default connectToDatabase;

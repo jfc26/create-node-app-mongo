@@ -1,24 +1,24 @@
-import { User } from '../database/User/User';
-import locallog from '../utils/locallog';
+import * as log from 'loglevel';
+import User from '../database/User';
+import authutils from '../utils/authutils';
 
-export default async function loadRootAccount() {
+export async function loadRootAccount() {
     try {
-        // Exited root account
         if (await User.isUsernameExisted(__env.ACCOUNT_ROOT_USERNAME)) {
+            log.trace('Root account was created');
             return;
         }
 
-        const { ACCOUNT_ROOT_USERNAME, ACCOUNT_ROOT_PASSWORD, ACCOUNT_ROOT_TWO_FACTOR_SECRET } =
-            __env;
-
-        // Sign up new root account
-        const newRootAccount = await User.signUp({
-            username: ACCOUNT_ROOT_USERNAME,
-            password: ACCOUNT_ROOT_PASSWORD,
-            twoFactorSecretKey: ACCOUNT_ROOT_TWO_FACTOR_SECRET || '',
+        const rootUser = await authutils.createAccount({
+            displayName: 'root',
+            owner: __env.SYS_OBJECT_ID,
+            createdBy: __env.SYS_OBJECT_ID,
+            username: __env.ACCOUNT_ROOT_USERNAME,
+            password: __env.ACCOUNT_ROOT_PASSWORD,
+            twoFactorSecret: __env.ACCOUNT_ROOT_TWO_FACTOR_SECRET,
         });
 
-        locallog.object(newRootAccount.toJSON());
+        log.info(rootUser.toJSON());
     } catch (e) {
         throw e;
     }

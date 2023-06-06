@@ -67,7 +67,7 @@ export class AuthController {
         }
     };
 
-    public readonly signOutRoute = async (req: RequestWithToken, res: Response) => {
+    public readonly signOutRoute = async (req: Request, res: Response) => {
         try {
             const success = await User.signOut(req.refreshToken.userId);
 

@@ -2,11 +2,7 @@ import { NextFunction, Response } from 'express';
 import localcrypto from '../../utils/localcrypto';
 import locallog from '../../utils/locallog';
 
-export async function verifyAccessTokenMiddleware(
-    req: RequestWithToken,
-    res: Response,
-    next: NextFunction,
-) {
+export async function verifyAccessTokenMiddleware(req: RequestWithToken, res: Response, next: NextFunction) {
     try {
         const { access_token: accessToken } = req.cookies;
 
@@ -28,11 +24,7 @@ export async function verifyAccessTokenMiddleware(
     }
 }
 
-export async function verifyRefreshTokenMiddleware(
-    req: RequestWithToken,
-    res: Response,
-    next: NextFunction,
-) {
+export async function verifyRefreshTokenMiddleware(req: RequestWithToken, res: Response, next: NextFunction) {
     try {
         const { refresh_token: refreshToken } = req.cookies;
 

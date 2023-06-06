@@ -1,21 +1,44 @@
-import { Document, Model } from 'mongoose';
-import { UserSchema, createUserSchema } from './user-schema';
-import userStatic, { UserStatics } from './userStatics';
-import { createRegularCollection } from '../../utils/dbutils';
+import { Model, Schema } from 'mongoose';
+import { createCollection } from '../../utils/dbutils';
+import g from '../../utils/g';
+import { UserStaticsType, userStatics } from './User.statics';
 
-export interface UserModel extends Model<UserSchema>, UserStatics {}
+export interface UserSchema extends BasicCollection {
+    displayName: string;
+    username: string;
+    passwordHashed: string;
+    twoFactorSecretEncrypted: string;
+}
 
-export type UserDoc = Document<unknown, {}, UserSchema> &
-    Omit<
-        UserSchema &
-            Required<{
-                _id: ObjectId;
-            }>,
-        never
-    >;
+interface UserModel extends Model<UserSchema>, BasicModel, UserStaticsType {}
 
-export const User = createRegularCollection<UserSchema, UserModel>({
+export type UserDocument = BasicDocument<UserSchema>;
+
+export const User = createCollection<UserSchema, UserModel>({
     name: 'user',
-    schema: createUserSchema(),
-    statics: userStatic,
+    schema: new Schema<UserSchema>(
+        {
+            displayName: {
+                type: String,
+                default: '',
+            },
+            username: {
+                type: String,
+                required: true,
+                unique: true,
+                validate: {
+                    validator: g.isUsername,
+                },
+            },
+            passwordHashed: {
+                type: String,
+                required: true,
+            },
+            twoFactorSecretEncrypted: {
+                type: String,
+            },
+        },
+        { timestamps: true },
+    ),
+    statics: [userStatics],
 });

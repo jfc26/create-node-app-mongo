@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
 
-export default function loadGlobalVariables() {
+export async function loadGlobalVariables() {
     (global as any).ObjectId = Types.ObjectId;
 }

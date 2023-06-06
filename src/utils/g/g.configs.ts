@@ -1,6 +1,16 @@
 import { z } from 'zod';
 import { createZodValidator } from './g.utils';
 import { errorUtil } from 'zod/lib/helpers/errorUtil';
+import { Types } from 'mongoose';
+
+//* strObjectID
+
+export function strObjectId(message: string = 'Invalid objectId') {
+    return z
+        .string()
+        .length(24)
+        .refine((v) => Types.ObjectId.isValid(v), message);
+}
 
 // * post
 export function port(message?: string) {

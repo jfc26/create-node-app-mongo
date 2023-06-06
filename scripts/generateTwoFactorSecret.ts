@@ -3,12 +3,12 @@ import * as speakeasy from 'speakeasy';
 
 
 
-function generateTwoFactorSecretKey(){
+function generateTwoFactorSecret(){
     const result = speakeasy.generateSecret({
-        name: 'TSNodeMongo (root)',
+        name: 'Sample (root)',
     });
 
     console.dir(result, {depth: Infinity});
 }
 
-generateTwoFactorSecretKey();
+generateTwoFactorSecret();

@@ -1,12 +1,16 @@
-import { Document, Schema, Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
+import { SoftDeletePluginStatics } from '../plugin/soft-delete-plugin';
 
 export {};
 
 declare global {
     class ObjectId extends Types.ObjectId {}
 
-    interface RegularCollection {
+    interface BasicCollection {
         _id: ObjectId;
+
+        createdBy: ObjectId;
+        owner: ObjectId;
 
         isDeleted: boolean;
         deletedBy?: ObjectId;
@@ -16,26 +20,14 @@ declare global {
         updatedAt: Date;
     }
 
-    type RegularDoc<SchemaType extends RegularCollection = RegularCollection> = Document<
-        unknown,
-        {},
-        SchemaType
-    > &
+    interface BasicModel extends SoftDeletePluginStatics {}
+
+    type BasicDocument<T extends BasicCollection = BasicCollection> = Document<unknown, {}, T> &
         Omit<
-            SchemaType &
+            T &
                 Required<{
                     _id: ObjectId;
                 }>,
             never
         >;
-
-    type MongooseSchema<T = any, TQueryHelpers = any> = Schema<
-        T,
-        any,
-        any,
-        TQueryHelpers,
-        any,
-        any,
-        any
-    >;
 }

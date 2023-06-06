@@ -7,5 +7,7 @@ declare global {
         [KEY: string]: T;
     }
 
+    type AnyKeys<T> = { [P in keyof T]?: T[P] | any };
+
     const __env: Readonly<EnvType>;
 }

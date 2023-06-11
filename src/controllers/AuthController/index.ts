@@ -21,5 +21,12 @@ export default async function loadAuthRouter(parentRouter: Router) {
         controller.signOutRoute as any,
     );
 
+    // prettier-ignore
+    router.get(
+        '/refresh-token',
+        verifyRefreshTokenMiddleware as any,
+        controller.refreshToken as any,
+    );
+
     parentRouter.use('/auth', router);
 }

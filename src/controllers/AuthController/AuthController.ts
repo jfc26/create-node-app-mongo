@@ -87,6 +87,25 @@ export class AuthController {
         }
     };
 
+    public readonly refreshToken = async (req: Request, res: Response) => {
+        try {
+            const replaceTokenReturn = await authutils.replaceToken({
+                _id: req.refreshToken._id,
+                userId: req.refreshToken.userId,
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent'] || '',
+            });
+
+            this.setTokenCookies(res, replaceTokenReturn);
+            res.status(200).json(replaceTokenReturn).end();
+            return;
+        } catch (e) {
+            log.error(e);
+            res.sendStatus(500);
+            return;
+        }
+    };
+
     private clearTokenCookies(res: Response) {
         res.clearCookie('access_token');
         res.clearCookie('refresh_token');

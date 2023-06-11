@@ -59,6 +59,7 @@ export async function verifyRefreshToken(token: string): Promise<RefreshToken | 
         // verify from database
         const signInRecord = await SignInRecord.findOne({
             _id: new ObjectId(_id),
+            isSignedOut: false,
             owner: new ObjectId(userId),
             refreshToken: token,
             refreshTokenExpireAt: {

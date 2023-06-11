@@ -1,46 +1,44 @@
-import { NextFunction, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import * as log from 'loglevel';
 import localcrypto from '../../utils/localcrypto';
-import locallog from '../../utils/locallog';
 
-export async function verifyAccessTokenMiddleware(req: RequestWithToken, res: Response, next: NextFunction) {
+export async function verifyAccessTokenMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
-        const { access_token: accessToken } = req.cookies;
+        const { access_token: strAccessToken } = req.cookies;
 
-        const accessTokenPayload = localcrypto.verifyAccessToken(accessToken);
+        const accessToken = await localcrypto.verifyAccessToken(strAccessToken);
 
-        if (!accessTokenPayload) {
+        if (!accessToken) {
             res.sendStatus(403).end();
             return;
         }
 
-        req.accessToken = accessTokenPayload;
+        req.accessToken = accessToken;
         next();
         return;
     } catch (e) {
-        locallog.log(e);
-
+        log.error(e);
         res.sendStatus(500).end();
         return;
     }
 }
 
-export async function verifyRefreshTokenMiddleware(req: RequestWithToken, res: Response, next: NextFunction) {
+export async function verifyRefreshTokenMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
-        const { refresh_token: refreshToken } = req.cookies;
+        const { refresh_token: strRefreshToken } = req.cookies;
 
-        const refreshTokenPayload = await localcrypto.verifyRefreshToken(refreshToken);
+        const refreshToken = await localcrypto.verifyRefreshToken(strRefreshToken);
 
-        if (!refreshTokenPayload) {
+        if (!refreshToken) {
             res.sendStatus(403).end();
             return;
         }
 
-        req.refreshToken = refreshTokenPayload;
+        req.refreshToken = refreshToken;
         next();
         return;
     } catch (e) {
-        locallog.log(e);
-
+        log.error(e);
         res.sendStatus(500).end();
         return;
     }

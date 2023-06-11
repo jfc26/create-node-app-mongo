@@ -1,3 +1,3 @@
 ## 23/06/11
-- [ ] Sign in
-- [ ] Sign out
+- [x] Sign in
+- [x] Sign out

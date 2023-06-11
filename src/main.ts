@@ -2,7 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import * as log from 'loglevel';
 
-log.setLevel('INFO');
+log.setLevel('DEBUG');
 
 //! global database plugin import
 import './plugin/basic-info-plugin';

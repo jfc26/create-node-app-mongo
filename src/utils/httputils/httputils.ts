@@ -1,9 +1,9 @@
-import { ZodError, z } from 'zod';
-import { ZodObjectFn } from '../g';
-import _ from 'lodash';
 import { NextFunction, Request, Response } from 'express';
+import z, { ZodError } from 'zod';
+import * as log from 'loglevel';
+import _ from 'lodash';
+import { ZodObjectFn } from '../g';
 import zodissues from '../zodissues';
-import locallog from '../locallog';
 
 export interface CreateRequestMiddlewareValidator {
     params?: ZodObjectFn[];
@@ -57,12 +57,12 @@ export function createRequestValidatorMiddleware(options: CreateRequestMiddlewar
 
                 //* @debug
                 const error = zodissues.toIssuesTypeOne(e.issues);
-                locallog.object(error, req.path);
+                log.trace(error);
                 res.status(400).json(error);
                 return;
             }
 
-            locallog.log(e);
+            log.error('Server error for request', req);
             res.sendStatus(500);
             return;
         }

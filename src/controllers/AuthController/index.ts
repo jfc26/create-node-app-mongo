@@ -10,16 +10,16 @@ export default async function loadAuthRouter(parentRouter: Router) {
     // prettier-ignore
     router.post(
         '/sign-in',
-        controller.signInValidatorMiddleware,
-        controller.signInRoute
+        controller.signInValidatorMiddleware as any,
+        controller.signInRoute as any,
     );
 
     // prettier-ignore
-    router.post(
-        '/sign-out',
-        verifyRefreshTokenMiddleware as any,
-        controller.signOutRoute as any,
-    );
+    // router.post(
+    //     '/sign-out',
+    //     verifyRefreshTokenMiddleware as any,
+    //     controller.signOutRoute as any,
+    // );
 
     parentRouter.use('/auth', router);
 }

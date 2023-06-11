@@ -3,6 +3,19 @@ import SignInRecord from '../../database/SignInRecord';
 import User, { UserDocument, UserSchema } from '../../database/User';
 import localcrypto from '../localcrypto';
 
+async function createAccessTokenPayload(userId: string): Promise<AccessToken> {
+    return {
+        userId,
+    };
+}
+
+async function createRefreshTokenPayload(userId: string, _id: string): Promise<RefreshToken> {
+    return {
+        _id: _id,
+        userId,
+    };
+}
+
 export interface SignInProps {
     username: string;
     password: string;
@@ -17,6 +30,11 @@ export type SignInReturn = {
     refreshTokenExpireAt: Date;
 };
 
+/**
+ * if sign-in succeeded then return userId else return undefined
+ * @param props
+ * @returns userId
+ */
 export const signIn = async (props: SignInProps): Promise<string | undefined> => {
     const { username, password, twoFactorToken } = props;
 
@@ -79,7 +97,8 @@ export const signOut = async (props: RefreshToken): Promise<boolean> => {
         },
         {
             $set: {
-                refreshTokenExpireAt: new Date(Date.now() - 1000),
+                refreshTokenExpireAt: new Date(),
+                isSignedOut: true,
             },
         },
     );
@@ -115,74 +134,74 @@ export const createAccount = async (props: SignUpProps): Promise<UserDocument> =
     return newAccount;
 };
 
-//*
-// export interface ReplaceTokenOptions {
-//     _id?: string;
-//     userId: string;
-//     oldRefreshToken?: string;
-// }
-// export type ReplaceTokenReturn = Awaited<ReturnType<typeof replaceToken>>;
-// export async function replaceToken(options: ReplaceTokenOptions) {
-//     const oldRefreshToken = options.oldRefreshToken;
-//     const signInRecordId = new ObjectId(options._id);
-//     const userInfo = await User.getUserInfo({
-//         userId: options.userId,
-//     });
+export interface ReplaceTokenOptions {
+    _id?: string;
+    userId: string;
+    ipAddress: string;
+    userAgent: string;
+}
 
-//     if (!userInfo) {
-//         throw new Error('[replaceToken] userInfo == null');
-//     }
+export interface ReplaceTokenReturn {
+    _id: string;
+    userId: string;
+    accessToken: string;
+    refreshToken: string;
+    accessTokenExpireAt: Date;
+    refreshTokenExpireAt: Date;
+}
+export async function replaceToken(options: ReplaceTokenOptions): Promise<ReplaceTokenReturn> {
+    const { userId, ipAddress, userAgent } = options;
+    const signInRecordId = options._id || new ObjectId().toString();
 
-//     const accessToken = localcrypto.createAccessToken(userInfo);
-//     const refreshToken = localcrypto.createRefreshToken({
-//         _id: signInRecordId.toJSON(),
-//         userId: userInfo.userId,
-//     });
-//     const accessTokenExpireAt = localcrypto.getTokenExpireTime(accessToken);
-//     const refreshTokenExpireAt = localcrypto.getTokenExpireTime(refreshToken);
+    const accessTokenPayload = await createAccessTokenPayload(userId);
+    const refreshTokenPayload = await createRefreshTokenPayload(userId, signInRecordId);
 
-//     //* Update or create sign-in record
-//     if (options._id == null) {
-//         await SignInRecord.create({
-//             _id: signInRecordId,
-//             owner: new ObjectId(userInfo.userId),
-//             refreshToken,
-//             accessTokenExpireAt,
-//             refreshTokenExpireAt,
-//         });
-//     } else {
-//         if (!oldRefreshToken) {
-//             throw new Error('oldRefreshToken required if the _id is not null');
-//         }
+    const accessToken = localcrypto.createAccessToken(accessTokenPayload);
+    const refreshToken = localcrypto.createRefreshToken(refreshTokenPayload);
 
-//         const updateResult = await SignInRecord.updateOne(
-//             {
-//                 _id: signInRecordId,
-//                 owner: new ObjectId(userInfo.userId),
-//                 refreshToken: oldRefreshToken,
-//                 refreshTokenExpireAt: {
-//                     $gt: new Date(),
-//                 },
-//             },
-//             {
-//                 $set: {
-//                     refreshToken,
-//                     accessTokenExpireAt,
-//                     refreshTokenExpireAt,
-//                 },
-//             },
-//         );
+    const accessTokenExpireAt = localcrypto.getTokenExpireTime(accessToken);
+    const refreshTokenExpireAt = localcrypto.getTokenExpireTime(refreshToken);
 
-//         if (updateResult.modifiedCount !== 1) {
-//             throw new Error(JSON.stringify(updateResult, null, 4));
-//         }
-//     }
+    //* Update or create sign-in record
+    if (options._id == null) {
+        await SignInRecord.create({
+            _id: new ObjectId(signInRecordId),
+            owner: new ObjectId(userId),
+            createdBy: new ObjectId(userId),
+            isSignedOut: false,
+            userAgent,
+            ipAddress,
+            accessToken,
+            accessTokenExpireAt,
+            refreshToken,
+            refreshTokenExpireAt,
+        });
+    } else {
+        const updateResult = await SignInRecord.updateOne(
+            {
+                _id: new ObjectId(signInRecordId),
+            },
+            {
+                $set: {
+                    accessToken,
+                    accessTokenExpireAt,
+                    refreshToken,
+                    refreshTokenExpireAt,
+                },
+            },
+        );
 
-//     return {
-//         accessToken,
-//         refreshToken,
-//         accessTokenExpireAt,
-//         refreshTokenExpireAt,
-//         ...userInfo,
-//     };
-// }
+        if (updateResult.modifiedCount !== 1) {
+            throw new Error(JSON.stringify(updateResult, null, 4));
+        }
+    }
+
+    return {
+        _id: signInRecordId,
+        userId,
+        accessToken,
+        refreshToken,
+        accessTokenExpireAt,
+        refreshTokenExpireAt,
+    };
+}

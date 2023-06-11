@@ -1,9 +1,9 @@
+import { Request, Response } from 'express';
 import { z } from 'zod';
+import * as log from 'loglevel';
 import g from '../../utils/g';
 import { createRequestValidatorMiddleware } from '../../utils/httputils/httputils';
-import { User } from '../../database/User/User';
-import { Request, Response } from 'express';
-import locallog from '../../utils/locallog';
+import authutils, { ReplaceTokenReturn } from '../../utils/authutils';
 
 function signInBodyType() {
     return z
@@ -11,6 +11,7 @@ function signInBodyType() {
             username: g.username(),
             password: g.password(),
             twoFactorToken: g.stringInt('Invalid two-factor authentication token'),
+            remember: z.boolean().default(false),
         })
         .strict();
 }
@@ -36,32 +37,30 @@ export class AuthController {
     public readonly signInRoute = async (req: Request, res: Response) => {
         try {
             const { username, password, twoFactorToken } = req.body as SignInBodyType;
-            const signInResult = await User.signIn({
+            const userId = await authutils.signIn({
                 username,
                 password,
                 twoFactorToken,
-                // debug: true,
             });
 
-            if (!signInResult) {
+            if (!userId) {
                 res.sendStatus(403).end();
                 return;
             }
 
-            res.cookie('access_token', signInResult.accessToken, {
-                httpOnly: true,
-                expires: signInResult.accessTokenExpireAt,
-            });
+            log.trace('[signInRoute] login success');
 
-            res.cookie('refresh_token', signInResult.refreshToken, {
-                httpOnly: true,
-                expires: signInResult.refreshTokenExpireAt,
+            const replaceTokenReturn = await authutils.replaceToken({
+                userId,
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent'] || '',
             });
+            this.setTokenCookies(res, replaceTokenReturn);
 
-            res.status(200).json(signInResult).end();
+            res.status(200).json(replaceTokenReturn).end();
             return;
         } catch (e) {
-            locallog.log(req.path, '\n', e);
+            log.error(req.path, '\n', e);
             res.sendStatus(500).end();
             return;
         }
@@ -69,10 +68,11 @@ export class AuthController {
 
     public readonly signOutRoute = async (req: Request, res: Response) => {
         try {
-            const success = await User.signOut(req.refreshToken.userId);
+            const success = await authutils.signOut(req.refreshToken);
 
-            res.clearCookie('access_token');
-            res.clearCookie('refresh_token');
+            if (success) {
+                this.clearTokenCookies(res);
+            }
 
             res.status(200)
                 .json({
@@ -81,10 +81,26 @@ export class AuthController {
                 .end();
             return;
         } catch (e) {
-            locallog.log(e);
-
+            log.error(e);
             res.sendStatus(500).end();
             return;
         }
     };
+
+    private clearTokenCookies(res: Response) {
+        res.clearCookie('access_token');
+        res.clearCookie('refresh_token');
+    }
+
+    private setTokenCookies(res: Response, replaceTokenReturn: ReplaceTokenReturn) {
+        res.cookie('access_token', replaceTokenReturn.accessToken, {
+            httpOnly: true,
+            expires: replaceTokenReturn.accessTokenExpireAt,
+        });
+
+        res.cookie('refresh_token', replaceTokenReturn.refreshToken, {
+            httpOnly: true,
+            expires: replaceTokenReturn.refreshTokenExpireAt,
+        });
+    }
 }
